@@ -1,114 +1,302 @@
 <!DOCTYPE html>
-<html lang="sr-Latn">
+<html lang="sr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Prostorna analiza i daljinska detekcija - Google Earth Engine">
-    <title>Prostorna Analiza | Daljinska Detekcija</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Aplikacija Rtanj</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 800px;
+            width: 100%;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 3.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .mountain-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .content {
+            padding: 60px 40px;
+        }
+
+        .description {
+            text-align: center;
+            margin-bottom: 50px;
+            color: #333;
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .feature-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .feature h3 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .feature p {
+            font-size: 0.95em;
+            opacity: 0.8;
+        }
+
+        .cta-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 50px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .cta-button:active {
+            transform: translateY(-1px);
+        }
+
+        .github-section {
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .github-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .github-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .github-icon {
+            font-size: 3em;
+        }
+
+        .repo-name {
+            font-size: 1.3em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+        }
+
+        .social-links {
+            margin-top: 20px;
+        }
+
+        .social-links a {
+            display: inline-block;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            line-height: 45px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2.5em;
+            }
+
+            .header {
+                padding: 40px 20px;
+            }
+
+            .content {
+                padding: 40px 20px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+
+            .mountain-icon {
+                font-size: 3em;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Background animated elements -->
-    <div class="background-container">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-    </div>
-
-    <!-- Main container -->
     <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="logo">🛰️ EarthVision</h1>
-                <p class="tagline">Istraživanje planeta iz perspektive prostora</p>
-            </div>
-        </header>
+        <div class="header">
+            <div class="mountain-icon">⛰️</div>
+            <h1>Aplikacija Rtanj</h1>
+            <p>Moderna Web Aplikacija</p>
+        </div>
 
-        <!-- Main content -->
-        <main class="main-content">
-            <!-- Card -->
-            <div class="card">
-                <!-- Card header icon -->
-                <div class="card-icon">
-                    <div class="icon-circle">
-                        🌍
+        <div class="content">
+            <div class="description">
+                <p>Dobrodošli na stranicu Aplikacije Rtanj! Evo vam mogućnosti koje aplikacija pruža.</p>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Brza</h3>
+                    <p>Optimizovana za maksimalnu brzinu i performanse</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📱</div>
+                    <h3>Responzivna</h3>
+                    <p>Radi savršeno na svim uređajima</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Moderna</h3>
+                    <p>Savremeni dizajn sa best practices</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Sigurna</h3>
+                    <p>Bezbednost na prvom mestu</p>
+                </div>
+            </div>
+
+            <div class="cta-section">
+                <a href="https://github.com/sandraristanovic03/Aplikacija_Rtanj" class="cta-button">
+                    📂 Pogledaj Repozitorijum na GitHub-u
+                </a>
+            </div>
+
+            <div class="github-section">
+                <h2>GitHub Repozitorijum</h2>
+                <div class="github-info">
+                    <div class="github-icon">🐙</div>
+                    <div>
+                        <div class="repo-name">sandraristanovic03/Aplikacija_Rtanj</div>
+                        <p style="color: #999; margin-top: 5px;">Public Repository</p>
                     </div>
                 </div>
-
-                <!-- Card body -->
-                <div class="card-body">
-                    <h2 class="card-title">Prostorna Analiza & Daljinska Detekcija</h2>
-                    
-                    <p class="card-description">
-                        Otkrijte moć satelitske tehnologije i napredne analize geoprostornih podataka. 
-                        Korišćenjem Google Earth Engine platforme, pristupite milionima slika iz satelita 
-                        i izvedite inteligentne analize terena za razumevanje promena na našoj planeti.
-                    </p>
-
-                    <!-- Features list -->
-                    <ul class="features-list">
-                        <li>
-                            <span class="feature-icon">✓</span>
-                            <span>Pristup satelitskim podacima u realnom vremenu</span>
-                        </li>
-                        <li>
-                            <span class="feature-icon">✓</span>
-                            <span>Analiza promena u zemljištu i vegetaciji</span>
-                        </li>
-                        <li>
-                            <span class="feature-icon">✓</span>
-                            <span>Praćenje klimatskih promena</span>
-                        </li>
-                        <li>
-                            <span class="feature-icon">✓</span>
-                            <span>Napredni alati za vizuelizaciju</span>
-                        </li>
-                    </ul>
-
-                    <!-- Call to action button -->
-                    <a href="https://earthengine.google.com/" target="_blank" rel="noopener noreferrer" class="cta-button">
-                        Otvorite Google Earth Engine
-                        <span class="button-arrow">→</span>
-                    </a>
-                </div>
+                <p style="color: #666; margin-bottom: 15px;">Preuzmite kod, doprinesi projektu ili pratite razvoj aplikacije.</p>
             </div>
+        </div>
 
-            <!-- Info boxes -->
-            <div class="info-grid">
-                <div class="info-box">
-                    <h3>📊 Analitika</h3>
-                    <p>Detaljne analize geoprostornih podataka sa mogućnošću izvoza rezultata</p>
-                </div>
-                <div class="info-box">
-                    <h3>🗺️ Mapiranje</h3>
-                    <p>Interaktivno mapiranje terena sa preciznim geopozicioniranjem</p>
-                </div>
-                <div class="info-box">
-                    <h3>🌱 Monitoring</h3>
-                    <p>Kontinuirano praćenje vegetacije i ekosistema tokom vremena</p>
-                </div>
+        <div class="footer">
+            <p>🏔️ <strong>Aplikacija Rtanj</strong> - Kreirana sa ❤️</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">© 2026 Sandra Ristanović</p>
+            <div class="social-links">
+                <a href="https://github.com/sandraristanovic03" title="GitHub Profil">🐙</a>
             </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>&copy; 2026 EarthVision. Prostorna analiza za bolju budućnost.</p>
-            <p class="footer-meta">Pokrenut Google Earth Engine API-jem</p>
-        </footer>
+        </div>
     </div>
-
-    <!-- Smooth scroll behavior -->
-    <script>
-        document.documentElement.style.scrollBehavior = 'smooth';
-        
-        window.addEventListener('load', function() {
-            const card = document.querySelector('.card');
-            card.style.opacity = '1';
-        });
-    </script>
 </body>
 </html>
