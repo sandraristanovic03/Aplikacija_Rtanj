@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web GIS - Monitor Šuma Planine Rtanj (2016–2024)</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts & FontAwesome za ikonice -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #1e3f20;
+            --secondary: #2e7d32;
+            --bg-dark: #121212;
+            --panel-bg: #1e1e1e;
+            --text-light: #f5f5f5;
+            --text-muted: #aaaaaa;
+            --border: #333333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            overflow: hidden;
+        }
+
+        /* Bočni panel - Sidebar */
+        #sidebar {
+            width: 380px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            color: #c8e6c9;
+        }
+
+        .panel-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        .panel-section h2 {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Layer Selection - Radio dugmad stilizovana kao kartice */
+        .layer-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .layer-option {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background-color: #262626;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .layer-option:hover {
+            background-color: #323232;
+            border-color: var(--secondary);
+        }
+
+        .layer-option input {
+            margin-right: 12px;
+            accent-color: var(--secondary);
+            transform: scale(1.2);
+        }
+
+        .layer-option .layer-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .layer-option .layer-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .layer-option .layer-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Statistika */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-card {
+            background-color: #262626;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .stat-card.danger { border-left-color: #d32f2f; }
+        .stat-card.success { border-left-color: #388e3c; }
+
+        .stat-val {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Mapa */
+        #map {
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Legenda na mapi */
+        .gis-legend {
+            background-color: rgba(30, 30, 30, 0.9);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 8px;
+            color: var(--text-light);
+            line-height: 1.5;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            max-width: 220px;
+        }
+
+        .legend-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .legend-color {
+            width: 18px;
+            height: 12px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        /* Dugme za sklanjanje panela na mobilnim uređajima */
+        #menu-toggle {
+            display: none;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 1100;
+            background: var(--panel-bg);
+            color: var(--text-light);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Prilagođavanje za telefone (Responsive) */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar {
+                width: 100%;
+                height: 40vh;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                border-right: none;
+                border-top: 1px solid var(--border);
+            }
+            #map {
+                height: 60vh;
+                width: 100%;
+            }
+            .panel-section { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="menu-toggle"><i class="fas fa-bars"></i></button>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h1>Rtanj Forest Monitor</h1>
+            <p>Geoprostorna analiza vegetacije (2016–2024)</p>
+        </div>
+
+        <!-- Izbor Slojeva (Layers) -->
+        <div class="panel-section" style="flex: 1;">
+            <h2><i class="fas fa-layer-group"></i> Satelitski Indeksi i Slojevi</h2>
+            <div class="layer-control">
+                
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="ndvi" checked>
+                    <div class="layer-info">
+                        <span class="layer-title">NDVI</span>
+                        <span class="layer-desc">Indeks zdravlja vegetacije (gustina zelenila)</span>
+                    </div>
+                </label>
+
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="ndmi">
+                    <div class="layer-info">
+                        <span class="layer-title">NDMI</span>
+                        <span class="layer-desc">Indeks vlažnosti stabala i stresa od suše</span>
+                    </div>
+                </label>
+
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="nbr">
+                    <div class="layer-info">
+                        <span class="layer-title">NBR (Normalized Burn Ratio)</span>
+                        <span class="layer-desc">Detekcija opožarenih površina i ožiljaka</span>
+                    </div>
+                </label>
+
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="savi">
+                    <div class="layer-info">
+                        <span class="layer-title">SAVI</span>
+                        <span class="layer-desc">Prilagođeni indeks za zemljište (manje šuma)</span>
+                    </div>
+                </label>
+
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="loss">
+                    <div class="layer-info">
+                        <span class="layer-title">Forest Loss (Gubitak Šuma)</span>
+                        <span class="layer-desc">Deforestacija i seča u periodu 2016-2024</span>
+                    </div>
+                </label>
+
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="gain">
+                    <div class="layer-info">
+                        <span class="layer-title">Forest Gain (Prirast Šuma)</span>
+                        <span class="layer-desc">Aforestacija i prirodna obnova vegetacije</span>
+                    </div>
+                </label>
+
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="deciduous">
+                    <div class="layer-info">
+                        <span class="layer-title">Lišćarske Šume</span>
+                        <span class="layer-desc">Klasifikacija: Bukva, hrast i ostali lišćari</span>
+                    </div>
+                </label>
+
+                <label class="layer-option">
+                    <input type="radio" name="gis-layer" value="coniferous">
+                    <div class="layer-info">
+                        <span class="layer-title">Četinarske Šume</span>
+                        <span class="layer-desc">Klasifikacija: Veštačke i prirodne sastojine bora</span>
+                    </div>
+                </label>
+
+            </div>
+        </div>
+
+        <!-- Statistika -->
+        <div class="panel-section">
+            <h2><i class="fas fa-chart-bar"></i> Statistika za Rtanj (Uživo)</h2>
+            <div id="stats-container" class="stats-grid">
+                <!-- Dinamički se menja putem JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MAPA -->
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // 1. Inicijalizacija mape centrirane na planinu Rtanj
+        const map = L.map('map', {
+            zoomControl: false 
+        }).setView([43.7719, 21.8944], 13);
+
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // 2. Podloge (Base Maps) - Dark Mode basemap koji savršeno ističe GIS slojeve
+        const darkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
+        }).addTo(map);
+
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri'
+        });
+
+        // 3. Lažni GEOJSON / WMS URL-ovi (Ovde u praksi stavljaš tvoje eksportovane slojeve iz npr. GeoServer-a ili GEE-a)
+        // Za demonstraciju, napravićemo stilizovane krugove/poligone na Rtnju koji simuliraju slojeve.
+        let activeGisLayerGroup = L.layerGroup().addTo(map);
+
+        // Lažni podaci za statistiku i legende na osnovu selekcije
+        const layerData = {
+            ndvi: {
+                title: "NDVI Vrednost (2024)",
+                legend: [
+                    { color: "#257d24", label: "Visoka vegetacija (> 0.7)" },
+                    { color: "#85c41e", label: "Srednja vegetacija (0.4 - 0.7)" },
+                    { color: "#dfdf22", label: "Niska vegetacija (0.1 - 0.4)" },
+                    { color: "#b36b22", label: "Golo zemljište / Stena" }
+                ],
+                stats: [
+                    { label: "Prosečan NDVI", val: "0.74", style: "success" },
+                    { label: "Stabilna površina", val: "84.2%", style: "" }
+                ]
+            },
+            ndmi: {
+                title: "NDMI (Stres od suše)",
+                legend: [
+                    { color: "#084594", label: "Visoka vlažnost" },
+                    { color: "#4292c6", label: "Optimalna vlažnost" },
+                    { color: "#fdae61", label: "Blagi vodeni stres" },
+                    { color: "#d7191c", label: "Kritična suša" }
+                ],
+                stats: [
+                    { label: "Sušna površina (2024)", val: "12.4%", style: "danger" },
+                    { label: "Sadržaj vode", val: "Optimalan", style: "success" }
+                ]
+            },
+            nbr: {
+                title: "NBR Ožiljci Požara",
+                legend: [
+                    { color: "#4a148c", label: "Zdrava šuma" },
+                    { color: "#fff59d", label: "Nizak intenzitet gorenja" },
+                    { color: "#ffb74d", label: "Srednji intenzitet" },
+                    { color: "#b71c1c", label: "Visok intenzitet (Gubitak)" }
+                ],
+                stats: [
+                    { label: "Registrovani požari", val: "0 (2016-24)", style: "success" },
+                    { label: "Rizik od požara", val: "Umeren", style: "" }
+                ]
+            },
+            savi: {
+                title: "SAVI Indeks",
+                legend: [
+                    { color: "#004d40", label: "Gusta krošnja" },
+                    { color: "#4db6ac", label: "Ređa šumska vegetacija" },
+                    { color: "#ffcc80", label: "Kamenjar i pašnjaci" }
+                ],
+                stats: [
+                    { label: "Korekcija tla", val: "L=0.5", style: "" },
+                    { label: "Preciznost oboda", val: "92%", style: "success" }
+                ]
+            },
+            loss: {
+                title: "Gubitak šumskog pokrivača",
+                legend: [
+                    { color: "#d32f2f", label: "Detektovan gubitak (2016-2024)" }
+                ],
+                stats: [
+                    { label: "Ukupno izgubljeno", val: "142.5 ha", style: "danger" },
+                    { label: "Glavni uzrok", val: "Sanitarna seča", style: "" }
+                ]
+            },
+            gain: {
+                title: "Prirast šumskog pokrivača",
+                legend: [
+                    { color: "#388e3c", label: "Novi prirast / Obnova" }
+                ],
+                stats: [
+                    { label: "Ukupno obnovljeno", val: "215.8 ha", style: "success" },
+                    { label: "Neto bilans", val: "+73.3 ha", style: "success" }
+                ]
+            },
+            deciduous: {
+                title: "Lišćarske sastojine",
+                legend: [
+                    { color: "#2e7d32", label: "Gusta bukova šuma" },
+                    { color: "#a1887f", label: "Hrast i ostali lišćari" }
+                ],
+                stats: [
+                    { label: "Ukupna površina", val: "68%", style: "" },
+                    { label: "Dominantna vrsta", val: "Fagus sylvatica", style: "" }
+                ]
+            },
+            coniferous: {
+                title: "Četinarske sastojine",
+                legend: [
+                    { color: "#004d40", label: "Crni bor (Pinus nigra)" }
+                ],
+                stats: [
+                    { label: "Zastupljenost", val: "12.3%", style: "" },
+                    { label: "Stanje kultura", val: "Stabilno", style: "success" }
+                ]
+            }
+        };
+
+        // 4. Kreiranje dinamičke legende
+        const legendControl = L.control({ position: 'bottomright' });
+        legendControl.onAdd = function() {
+            this._div = L.DomUtil.create('div', 'gis-legend');
+            this.update('ndvi'); // Podrazumevani sloj pri učitavanju
+            return this._div;
+        };
+        legendControl.update = function(layerKey) {
+            const data = layerData[layerKey];
+            let html = `<div class="legend-title">${data.title}</div>`;
+            data.legend.forEach(item => {
+                html += `
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: ${item.color}"></span>
+                        <span>${item.label}</span>
+                    </div>`;
+            });
+            this._div.innerHTML = html;
+        };
+        legendControl.addTo(map);
+
+        // 5. Funkcija za ažuriranje statistike u bočnom panelu
+        function updateStatsPanel(layerKey) {
+            const container = document.getElementById('stats-container');
+            const stats = layerData[layerKey].stats;
+            container.innerHTML = '';
+            
+            stats.forEach(s => {
+                container.innerHTML += `
+                    <div class="stat-card ${s.style}">
+                        <div class="stat-label">${s.label}</div>
+                        <div class="stat-val">${s.val}</div>
+                    </div>`;
+            });
+        }
+
+        // 6. Funkcija koja simulira promenu GIS slojeva na mapi (iscrtava simulirane poligone)
+        function renderSimulatedLayer(layerKey) {
+            activeGisLayerGroup.clearLayers();
+            
+            // Centar Rtnja (vrh Šiljak)
+            const rtanjCenter = [43.7719, 21.8944];
+            
+            // Generišemo vizuelne simulacije za svaki indeks radi prikaza na mapi
+            const colors = layerData[layerKey].legend.map(i => i.color);
+            
+            if(layerKey === 'loss') {
+                // Primer: Par crvenih krugova koji označavaju gubitak šume na obodima
+                L.circle([43.765, 21.87], {radius: 400, color: colors[0], fillColor: colors[0], fillOpacity: 0.6}).addTo(activeGisLayerGroup).bindPopup("Seča šume 2021. godine");
+                L.circle([43.78, 21.92], {radius: 300, color: colors[0], fillColor: colors[0], fillOpacity: 0.6}).addTo(activeGisLayerGroup).bindPopup("Sanitarna seča sušnih stabala 2023.");
+            } else if (layerKey === 'gain') {
+                // Zelene zone obnove
+                L.circle([43.755, 21.90], {radius: 600, color: colors[0], fillColor: colors[0], fillOpacity: 0.5}).addTo(activeGisLayerGroup).bindPopup("Prirodno podmlađivanje bukovih šuma");
+            } else {
+                // Za ostale indekse pravimo veće zone (npr. pojas šume oko vrha)
+                L.circle(rtanjCenter, {radius: 1200, color: colors[0], fillColor: colors[0], fillOpacity: 0.4}).addTo(activeGisLayerGroup).bindPopup("Zona visoke vegetacije");
+                L.circle(rtanjCenter, {radius: 2500, color: colors[1] || colors[0], fillColor: colors[1] || colors[0], fillOpacity: 0.3}).addTo(activeGisLayerGroup);
+            }
+        }
+
+        // 7. Event Listener za promenu selekcije slojeva
+        document.querySelectorAll('input[name="gis-layer"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const layerKey = e.target.value;
+                legendControl.update(layerKey);
+                updateStatsPanel(layerKey);
+                renderSimulatedLayer(layerKey);
+            });
+        });
+
+        // Inicijalno pokretanje
+        updateStatsPanel('ndvi');
+        renderSimulatedLayer('ndvi');
+
+        // Granica obuhvata Rtnja (opciono - dodaj pravougaonik kao granicu istraživanja)
+        L.rectangle([[43.73, 21.80], [43.81, 21.98]], {
+            color: "#ffffff", 
+            weight: 1, 
+            fill: false, 
+            dashArray: "5, 5"
+        }).addTo(map).bindPopup("Granica istraživačkog područja planine Rtanj");
+
+    </script>
+</body>
+</html>
